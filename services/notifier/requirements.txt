@@ -1,0 +1,5 @@
+# Group 3 — WebSocket notifier deps (additive to root requirements.txt).
+fastapi==0.111.1        # WebSocket app
+uvicorn[standard]==0.30.3   # ASGI server (run natively)
+confluent-kafka==2.15.0     # own consumer group (already pinned in root; repeated for clarity)
+redis==5.0.7                # authoritative matched/total counters
