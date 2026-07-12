@@ -7,3 +7,5 @@ pgvector==0.3.2                # vector type helpers
 APScheduler==3.10.4            # periodic CVE-corpus refresh (NOT Celery) — arch rule 2
 openai==1.40.0                 # OpenAI-compatible client for Groq/Gemini LLM narration
 minio==7.2.7                   # SBOM / report artifacts to MinIO
+pymongo==4.8.0                 # reports collection (Task 11 aggregator)
+redis==5.0.7                   # counters / markers / Redlock (shared with router)
