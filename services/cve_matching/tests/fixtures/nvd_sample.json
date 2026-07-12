@@ -1,0 +1,111 @@
+{
+  "resultsPerPage": 4,
+  "startIndex": 0,
+  "totalResults": 4,
+  "vulnerabilities": [
+    {
+      "cve": {
+        "id": "CVE-2021-28831",
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "decompress_gunzip.c in BusyBox through 1.32.1 mishandles the error bit on the huft_build result, and consequently attempts to free a not-allocated pointer, aka an invalid free."
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:busybox:busybox:1.31.1:*:*:*:*:*:*:*"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2022-28391",
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "BusyBox through 1.35.0 allows remote attackers to execute arbitrary code via a crafted line feed sequence to the hostname argument."
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:busybox:busybox:1.34.0:*:*:*:*:*:*:*"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2016-2107",
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "The AES-NI implementation in OpenSSL before 1.0.1t and 1.0.2 before 1.0.2h allows a padding oracle attack that decrypts TLS traffic."
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:openssl:openssl:1.0.2:*:*:*:*:*:*:*"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2020-0001",
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "An out-of-scope example vulnerability in Microsoft Windows that must never enter the scoped embedded-firmware corpus."
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:microsoft:windows_10:1809:*:*:*:*:*:*:*"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
