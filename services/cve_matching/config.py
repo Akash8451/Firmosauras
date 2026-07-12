@@ -129,6 +129,16 @@ _PRODUCT_INDEX: Dict[str, ComponentFamily] = {
 }
 
 
+_FAMILY_BY_NAME: Dict[str, ComponentFamily] = {fam.name: fam for fam in COMPONENT_FAMILIES}
+
+
+def family_by_name(name: Optional[str]) -> Optional[ComponentFamily]:
+    """Return the ComponentFamily for a family name, or None."""
+    if not name:
+        return None
+    return _FAMILY_BY_NAME.get(name)
+
+
 def family_for(vendor: Optional[str], product: Optional[str]) -> Optional[str]:
     """Resolve a (vendor, product) pair to a family name, or None if out of scope."""
     if not product:
