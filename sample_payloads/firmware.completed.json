@@ -1,0 +1,6 @@
+{
+  "job_id": "7b3e5f28-9c14-4a6d-8e2f-1a2b3c4d5e6f",
+  "status": "COMPLETE",
+  "report_s3_key": "reports/7b3e5f28-9c14-4a6d-8e2f-1a2b3c4d5e6f/report.json",
+  "sbom_s3_key": "reports/7b3e5f28-9c14-4a6d-8e2f-1a2b3c4d5e6f/sbom.json"
+}

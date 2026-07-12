@@ -1,0 +1,20 @@
+{
+  "job_id": "7b3e5f28-9c14-4a6d-8e2f-1a2b3c4d5e6f",
+  "sub_blob_id": "a1b2c3d4-0001-4aaa-8bbb-000000000001",
+  "strings_found": [
+    "/bin/busybox",
+    "BusyBox v1.31.1 (2020-04-14 15:22:11 UTC)",
+    "root:x:0:0:root:/root:/bin/sh"
+  ],
+  "entropy_sections": [
+    {"offset": 0, "entropy": 4.21, "flagged_packed": false},
+    {"offset": 1048576, "entropy": 7.94, "flagged_packed": true}
+  ],
+  "version_candidates": [
+    {"vendor": "busybox", "product": "busybox", "version": "1.31.1"}
+  ],
+  "secrets_flagged": [
+    {"type": "private_key_header", "context": "-----BEGIN RSA PRIVATE KEY-----"}
+  ],
+  "hardening_flags": {"nx": true, "pie": false, "relro": "partial", "canary": true}
+}

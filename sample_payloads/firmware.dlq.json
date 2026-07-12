@@ -1,0 +1,6 @@
+{
+  "original_topic": "firmware.triaged",
+  "payload": "{\"job_id\": \"7b3e5f28-9c14-4a6d-8e2f-1a2b3c4d5e6f\", \"sha256\": \"not-a-valid-hash\", \"is_duplicate\": false, \"size_bytes\": 12582912}",
+  "error": "ValidationError: sha256 must be a 64-character hex string",
+  "failed_at": "2026-07-12T10:05:00Z"
+}

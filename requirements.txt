@@ -1,0 +1,6 @@
+# Baseline Python dependencies for the shared contract + harness/router.
+# Pinned exactly to keep every group and CI on the same versions.
+# Groups 2/3 extend this via their own additive requirements as needed.
+
+pydantic==2.11.7          # frozen event contracts (shared/contracts/)
+confluent-kafka==2.15.0   # Kafka client for the router + test harness (scripts/)

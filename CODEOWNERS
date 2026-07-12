@@ -1,0 +1,47 @@
+# CODEOWNERS — review routing by path, mirroring TEAM_SPLIT.md ownership.
+#
+# Replace the @firmosaurus/* team handles below with your real GitHub team slugs
+# (or individual @usernames). Last matching pattern wins, so shared-interface
+# files are listed AFTER the broad rules to force cross-group review.
+#
+# Groups:
+#   @firmosaurus/group1-foundation    shared/, router runner, scripts, compose, CI
+#   @firmosaurus/group2-ingestion      gateway upload/RBAC, triage/unpack/analysis
+#   @firmosaurus/group3-intelligence   cve_match/aggregate, notifier, CVE HTTP surface
+#   @firmosaurus/group4-surface        frontend, integration
+
+# ---- Default: Group 1 stewards the baseline -------------------------------
+*                                       @firmosaurus/group1-foundation
+
+# ---- Group 1 — Foundation & Shared Baseline -------------------------------
+/scripts/                               @firmosaurus/group1-foundation
+/services/router/runner.py              @firmosaurus/group1-foundation
+/README.md                              @firmosaurus/group1-foundation
+/ARCHITECTURE.md                        @firmosaurus/group1-foundation
+/CONTRIBUTING.md                        @firmosaurus/group1-foundation
+/.gitignore                             @firmosaurus/group1-foundation
+/.env.example                           @firmosaurus/group1-foundation
+
+# ---- Group 2 — Ingestion & Extraction -------------------------------------
+/services/gateway/                      @firmosaurus/group2-ingestion @firmosaurus/group3-intelligence
+/services/router/handlers/triage.py     @firmosaurus/group2-ingestion
+/services/router/handlers/unpack.py     @firmosaurus/group2-ingestion
+/services/router/handlers/analysis.py   @firmosaurus/group2-ingestion
+
+# ---- Group 3 — Intelligence & Aggregation ---------------------------------
+/services/router/handlers/cve_match.py  @firmosaurus/group3-intelligence
+/services/router/handlers/aggregate.py  @firmosaurus/group3-intelligence
+/services/notifier/                     @firmosaurus/group3-intelligence
+
+# ---- Group 4 — Surface & Integration --------------------------------------
+/frontend/                              @firmosaurus/group4-surface
+
+# ---- Shared-interface files (PR-gated, cross-group review) ----------------
+# Listed last so these owners take precedence over the broad rules above.
+# Every group depends on these; a reviewer from a different group is required.
+/shared/                                @firmosaurus/group1-foundation @firmosaurus/group2-ingestion @firmosaurus/group3-intelligence
+/sample_payloads/                       @firmosaurus/group1-foundation @firmosaurus/group2-ingestion @firmosaurus/group3-intelligence
+/docker-compose.yml                     @firmosaurus/group1-foundation @firmosaurus/group2-ingestion @firmosaurus/group3-intelligence
+/services/router/Dockerfile             @firmosaurus/group1-foundation @firmosaurus/group2-ingestion
+/CODEOWNERS                             @firmosaurus/group1-foundation
+/.kiro/steering/                        @firmosaurus/group1-foundation @firmosaurus/group2-ingestion @firmosaurus/group3-intelligence @firmosaurus/group4-surface

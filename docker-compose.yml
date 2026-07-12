@@ -1,0 +1,196 @@
+# Firmosaurus — local infrastructure (Docker Desktop / WSL2, 8 GB cap).
+#
+# MEMORY DISCIPLINE (hard-constraints.md): the OOM killer is the enemy.
+#   * We run plain `docker compose up` (NOT Swarm), so `deploy.resources.limits`
+#     is SILENTLY IGNORED. Every service therefore uses the top-level `mem_limit`.
+#   * No JVM services — Redpanda (not Kafka), sized with explicit --memory flags.
+#   * Named volumes ONLY. No bind mounts for DB/broker data (WSL2/NTFS corruption).
+#
+# Approx mem_limit budget below ≈ 2.8 GB, leaving ~5 GB headroom under the 8 GB
+# WSL2 cap for the natively-parked router/gateway/notifier processes.
+
+services:
+  # ------------------------------------------------------------------ #
+  # Redpanda — Kafka-API broker (no Zookeeper, no JVM).                 #
+  # ------------------------------------------------------------------ #
+  redpanda:
+    image: redpandadata/redpanda:v24.2.7
+    container_name: firmosaurus-redpanda
+    command:
+      - redpanda
+      - start
+      # MANDATORY memory flags (mem_limit alone is insufficient for Redpanda).
+      - --overprovisioned
+      - --memory
+      - 512M
+      - --reserve-memory
+      - 0M
+      - --smp
+      - "1"
+      - --default-log-level=info
+      # Dual listeners: internal (containers) + external (host-native scripts/frontend).
+      - --kafka-addr
+      - internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr
+      # IPv4 literal on purpose: on Windows `localhost` resolves to ::1 first and
+      # librdkafka fails to reach the mapped IPv4 port. 127.0.0.1 keeps clients on IPv4.
+      - internal://redpanda:9092,external://127.0.0.1:19092
+      - --pandaproxy-addr
+      - internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr
+      - internal://redpanda:8082,external://localhost:18082
+    ports:
+      - "19092:19092"   # Kafka API (host) — REDPANDA_BROKERS=localhost:19092
+      - "18082:18082"   # HTTP proxy (host)
+      - "9644:9644"     # Admin API / metrics
+    mem_limit: 700m
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster info --brokers localhost:9092 >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------ #
+  # Redis — SINGLE instance, noeviction. Structural state only:        #
+  # counters, markers, Redlock, idempotency flags, Bloom bitmap.       #
+  # ------------------------------------------------------------------ #
+  redis:
+    image: redis:7-alpine
+    container_name: firmosaurus-redis
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory-policy
+      - noeviction
+    ports:
+      - "6379:6379"
+    mem_limit: 256m
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------ #
+  # Postgres + pgvector. Extension created on first init via config.   #
+  # ------------------------------------------------------------------ #
+  postgres:
+    image: pgvector/pgvector:0.7.4-pg16
+    container_name: firmosaurus-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-firmosaurus}
+      POSTGRES_USER: ${POSTGRES_USER:-firmosaurus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-firmosaurus}
+    ports:
+      - "5432:5432"
+    mem_limit: 512m
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    configs:
+      # Inline config (not a bind mount) — runs once on empty data dir.
+      - source: postgres_init_pgvector
+        target: /docker-entrypoint-initdb.d/00_init_pgvector.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-firmosaurus} -d ${POSTGRES_DB:-firmosaurus}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------ #
+  # MongoDB — reports. Cache capped so it doesn't grab ~50% of RAM.    #
+  # ------------------------------------------------------------------ #
+  mongo:
+    image: mongo:7.0
+    container_name: firmosaurus-mongo
+    command: ["--wiredTigerCacheSizeGB", "0.5"]
+    ports:
+      - "27017:27017"
+    mem_limit: 768m
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------ #
+  # MinIO — S3-compatible object store.                                #
+  # MINIO_SERVER_URL=localhost:9000 so presigned URLs resolve from the #
+  # host (frontend runs natively, not in Docker).                      #
+  # ------------------------------------------------------------------ #
+  minio:
+    image: minio/minio:latest
+    container_name: firmosaurus-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_SERVER_URL: http://localhost:9000
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Console
+    mem_limit: 512m
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local >/dev/null 2>&1 || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------ #
+  # One-shot: create raw-uploads bucket + 24h expiry lifecycle.        #
+  # Retries `mc alias set` until MinIO is ready, then exits.           #
+  # ------------------------------------------------------------------ #
+  createbuckets:
+    image: minio/mc:latest
+    container_name: firmosaurus-createbuckets
+    depends_on:
+      - minio
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        until mc alias set local http://minio:9000 "${MINIO_ROOT_USER:-minioadmin}" "${MINIO_ROOT_PASSWORD:-minioadmin}"; do
+          echo 'waiting for minio...'; sleep 2;
+        done;
+        mc mb --ignore-existing local/${MINIO_RAW_BUCKET:-raw-uploads};
+        mc ilm rule add --expire-days 1 local/${MINIO_RAW_BUCKET:-raw-uploads} \
+          || mc ilm add --expiry-days 1 local/${MINIO_RAW_BUCKET:-raw-uploads} \
+          || echo 'WARN: could not set lifecycle rule';
+        echo '--- lifecycle rules on ${MINIO_RAW_BUCKET:-raw-uploads} ---';
+        mc ilm rule ls local/${MINIO_RAW_BUCKET:-raw-uploads} || mc ilm ls local/${MINIO_RAW_BUCKET:-raw-uploads} || true;
+        echo 'raw-uploads bucket + 24h object lifecycle configured';
+    mem_limit: 128m
+    restart: "no"
+
+# --------------------------------------------------------------------- #
+# Inline config: create the pgvector extension on first DB init.        #
+# Using `content` avoids any host bind mount entirely.                  #
+# --------------------------------------------------------------------- #
+configs:
+  postgres_init_pgvector:
+    content: |
+      CREATE EXTENSION IF NOT EXISTS vector;
+
+# --------------------------------------------------------------------- #
+# Named volumes only (never bind mounts for data on Windows/WSL2).      #
+# --------------------------------------------------------------------- #
+volumes:
+  redpanda_data:
+  redis_data:
+  postgres_data:
+  mongo_data:
+  minio_data:

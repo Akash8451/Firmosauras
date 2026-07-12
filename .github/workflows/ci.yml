@@ -1,0 +1,35 @@
+name: CI
+
+# The baseline gate every PR must pass (CONTRIBUTING.md / TEAM_SPLIT.md):
+#   * schema-lint  — sample_payloads/ validate against shared/contracts/
+#   * boundary     — handlers never call each other in-process (Kafka-only)
+# Broker-dependent integration tests run locally against docker compose; this
+# gate is intentionally fast and needs no services.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  contract-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Schema-lint (sample_payloads vs shared/contracts)
+        run: python scripts/schema_lint.py
+
+      - name: Handler boundary check (no direct handler-to-handler calls)
+        run: python scripts/check_handler_boundaries.py
+
+      - name: Import router (registry populated, topology resolves)
+        run: python -c "import services.router.runner as r; from services.router.registry import registered_topics; from services.router.topology import resolve_subscriptions; assert len(registered_topics()) == 5; assert len(resolve_subscriptions('all')) == 5; print('router import OK')"

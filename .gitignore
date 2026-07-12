@@ -1,0 +1,85 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ---- Node / Frontend ----
+node_modules/
+.next/
+out/
+.turbo/
+.parcel-cache/
+dist-frontend/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.eslintcache
+
+# ---- Secrets / Env ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ---- Docker volumes / local data ----
+# Named volumes live inside the Docker VM, but guard against accidental bind-mount dirs.
+data/
+volumes/
+pgdata/
+minio-data/
+mongo-data/
+redpanda-data/
+redis-data/
+
+# ---- Model weights / embeddings artifacts ----
+# sentence-transformers/all-MiniLM-L6-v2 and any downloaded CVE feeds/indices.
+models/
+*.bin.model
+*.safetensors
+*.gguf
+*.pt
+*.onnx
+.cache/huggingface/
+nvd_feeds/
+
+# ---- IDE / OS ----
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
