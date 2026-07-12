@@ -1,0 +1,9 @@
+# Group 3 — CVE intelligence runtime deps (additive to root requirements.txt).
+# Pinned. Lazy-imported so a plain unit-test run doesn't require them installed.
+
+sentence-transformers==3.0.1   # all-MiniLM-L6-v2 embeddings (384-dim) — SCHEMA.md §6
+psycopg[binary]==3.2.1         # Postgres + pgvector driver (query path, ETL upsert)
+pgvector==0.3.2                # vector type helpers
+APScheduler==3.10.4            # periodic CVE-corpus refresh (NOT Celery) — arch rule 2
+openai==1.40.0                 # OpenAI-compatible client for Groq/Gemini LLM narration
+minio==7.2.7                   # SBOM / report artifacts to MinIO
