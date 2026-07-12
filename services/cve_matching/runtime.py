@@ -12,6 +12,7 @@ from typing import Optional
 from .artifacts import ArtifactStore, MinioArtifactStore
 from .corpus import CorpusRepository, PgVectorCorpus
 from .embeddings import Embedder, get_embedder, set_embedder  # re-exported
+from .feedback import FeedbackStore, PostgresFeedbackStore
 from .llm import LlmNarrator, get_narrator, set_narrator  # re-exported
 from .reports import MongoReportStore, ReportStore
 
@@ -22,6 +23,8 @@ __all__ = [
     "set_artifact_store",
     "get_report_store",
     "set_report_store",
+    "get_feedback_store",
+    "set_feedback_store",
     "get_embedder",
     "set_embedder",
     "get_narrator",
@@ -31,6 +34,7 @@ __all__ = [
 _repo: Optional[CorpusRepository] = None
 _artifact_store: Optional[ArtifactStore] = None
 _report_store: Optional[ReportStore] = None
+_feedback_store: Optional[FeedbackStore] = None
 
 
 def get_repo() -> CorpusRepository:
@@ -67,3 +71,15 @@ def get_report_store() -> ReportStore:
 def set_report_store(store: Optional[ReportStore]) -> None:
     global _report_store
     _report_store = store
+
+
+def get_feedback_store() -> FeedbackStore:
+    global _feedback_store
+    if _feedback_store is None:
+        _feedback_store = PostgresFeedbackStore()
+    return _feedback_store
+
+
+def set_feedback_store(store: Optional[FeedbackStore]) -> None:
+    global _feedback_store
+    _feedback_store = store

@@ -30,6 +30,8 @@ class LlmNarrator(Protocol):
 
     def executive_summary(self, *, job_id: str, findings: List[dict]) -> Optional[str]: ...
 
+    def rag_answer(self, *, question: str, context_chunks: List[str]) -> Optional[str]: ...
+
 
 class OpenAICompatibleNarrator:
     """Narrator backed by any OpenAI-compatible chat-completions endpoint.
@@ -115,6 +117,20 @@ class OpenAICompatibleNarrator:
         ]
         user = f"Job {job_id} findings:\n" + "\n".join(lines)
         return self._chat(system, user, max_tokens=300)
+
+    def rag_answer(self, *, question: str, context_chunks: List[str]) -> Optional[str]:
+        """Answer a question grounded ONLY in the retrieved context (RAG chat)."""
+        if not context_chunks:
+            return None
+        system = (
+            "You are a firmware security assistant. Answer the question using ONLY the "
+            "provided context (CVE descriptions and this job's findings). If the answer "
+            "is not in the context, say you don't have enough information. Do not invent "
+            "CVEs, versions, or severities."
+        )
+        context = "\n".join(f"- {c}" for c in context_chunks[:20])
+        user = f"Question: {question}\n\nContext:\n{context}"
+        return self._chat(system, user, max_tokens=400)
 
 
 # --------------------------------------------------------------------------- #

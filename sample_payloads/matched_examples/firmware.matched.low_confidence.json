@@ -1,0 +1,13 @@
+{
+  "job_id": "7b3e5f28-9c14-4a6d-8e2f-1a2b3c4d5e6f",
+  "sub_blob_id": "a1b2c3d4-0003-4aaa-8bbb-000000000003",
+  "cve_matches": [
+    {
+      "cve_id": "CVE-2019-5482",
+      "confidence_tier": "LOW_CONFIDENCE",
+      "similarity_score": 0.58,
+      "matched_via": "embedding_similarity",
+      "llm_rationale": "Weak semantic overlap between the extracted libcurl banner and this CVE; low confidence, analyst review recommended."
+    }
+  ]
+}

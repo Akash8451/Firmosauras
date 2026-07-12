@@ -112,3 +112,9 @@ class FakeNarrator:
         if self.fail:
             raise RuntimeError("simulated LLM outage")
         return f"[stub summary] job {job_id}: {len(findings)} finding(s)."
+
+    def rag_answer(self, *, question, context_chunks):
+        self.calls.append({"question": question, "chunks": len(context_chunks)})
+        if self.fail:
+            raise RuntimeError("simulated LLM outage")
+        return f"[stub answer] to '{question}' from {len(context_chunks)} chunk(s)."
