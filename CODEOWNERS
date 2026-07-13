@@ -24,6 +24,8 @@
 
 # ---- Group 2 — Ingestion & Extraction -------------------------------------
 /services/gateway/                      @firmosaurus/group2-ingestion @firmosaurus/group3-intelligence
+/services/ingestion/                    @firmosaurus/group2-ingestion
+/services/static_analysis/              @firmosaurus/group2-ingestion
 /services/router/handlers/triage.py     @firmosaurus/group2-ingestion
 /services/router/handlers/unpack.py     @firmosaurus/group2-ingestion
 /services/router/handlers/analysis.py   @firmosaurus/group2-ingestion

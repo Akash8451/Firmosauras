@@ -1,0 +1,11 @@
+{
+  "job_id": "7b3e5f28-9c14-4a6d-8e2f-1a2b3c4d5e6f",
+  "sub_blob_id": "a1b2c3d4-0004-4aaa-8bbb-000000000004",
+  "strings_found": ["etc/passwd", "nobody:x:65534:65534:", "config.ini"],
+  "entropy_sections": [
+    {"offset": 0, "entropy": 3.42, "flagged_packed": false}
+  ],
+  "version_candidates": [],
+  "secrets_flagged": [],
+  "hardening_flags": {"nx": false, "pie": false, "relro": "none", "canary": false}
+}
