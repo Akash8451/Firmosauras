@@ -27,7 +27,7 @@ from fastapi import FastAPI
 
 from services.gateway.app import create_app as create_gateway_app
 
-from . import http, reports_api
+from . import http, reports_api, schema
 from .job_index import JobIndexService
 
 log = logging.getLogger("integration.app")
@@ -64,6 +64,10 @@ def _wire_index_lifecycle(app: FastAPI, index_service: JobIndexService, sweep_in
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):  # pragma: no cover - needs a broker
+        # Ensure the analyst_feedback table exists (it has no self-creating repo,
+        # unlike jobs/cve_corpus) so feedback + recalibration work on a fresh DB.
+        schema.ensure_feedback_schema()
+
         # Own consumer group so the index builder gets its own copy of the stream
         # (independent of the notifier and the router groups).
         consumer = None
