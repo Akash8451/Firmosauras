@@ -170,3 +170,47 @@ def get_manager() -> JobIndexManager:
 def set_manager(manager: Optional[JobIndexManager]) -> None:
     global _manager
     _manager = manager
+
+
+class JobIndexService:
+    """Wires the per-job index into the pipeline: build on `firmware.completed`.
+
+    Given a report-store getter, it assembles a job's index from that job's own
+    report the moment the job completes, and exposes a `sweep()` the app can call
+    on a timer for TTL teardown. Best-effort: a build failure for one job never
+    breaks the pipeline.
+    """
+
+    def __init__(self, *, manager: Optional[JobIndexManager] = None, report_store_getter: Optional[Callable[[], object]] = None) -> None:
+        self._manager = manager
+        self._report_store_getter = report_store_getter
+
+    def _mgr(self) -> JobIndexManager:
+        return self._manager or get_manager()
+
+    def _report_store(self):
+        if self._report_store_getter is not None:
+            return self._report_store_getter()
+        from services.cve_matching import runtime  # lazy
+        return runtime.get_report_store()
+
+    def build_for_job(self, job_id: str) -> int:
+        report = self._report_store().get(job_id)
+        chunks = chunks_from_report(report)
+        return self._mgr().build(job_id, chunks)
+
+    def on_event(self, topic: str, payload: dict) -> None:
+        """Callback for a `firmware.*` consumer: build the index on completion."""
+        from shared import topics as _t  # lazy
+
+        if topic == _t.FIRMWARE_COMPLETED:
+            job_id = payload.get("job_id")
+            if job_id:
+                try:
+                    n = self.build_for_job(job_id)
+                    log.info("job %s completed: built per-job index (%d chunks)", job_id, n)
+                except Exception:
+                    log.warning("failed to build per-job index for %s", job_id, exc_info=True)
+
+    def sweep(self) -> List[str]:
+        return self._mgr().sweep()

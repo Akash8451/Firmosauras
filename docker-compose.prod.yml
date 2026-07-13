@@ -1,0 +1,114 @@
+# Firmosaurus — PRODUCTION profile (Group 4).
+#
+# Overlay on top of the base infra file. Run with BOTH files so the infra
+# (redpanda/redis/postgres/mongo/minio) is defined exactly once and reused:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+#
+# This is the split-container topology: FOUR routers, each a different SERVICES=
+# value (triage | unpack | analysis | match,aggregate) covering all five stages,
+# plus the gateway and the notifier. Every app container runs the SAME image
+# (firmosaurus-app:prod) — only `command:` + `SERVICES` differ. That is the proof
+# that the code is byte-identical between the fat container (SERVICES=all) and
+# this split profile: same image digest, only compose + env change.
+#
+# MEMORY DISCIPLINE (hard-constraints.md): plain `docker compose up` (NOT Swarm),
+# so every container uses the top-level `mem_limit` (deploy.resources is ignored).
+# See deploy/PRODUCTION.md for the full 8 GB budget table. Headroom is parked on
+# the match router and the gateway (they load torch for the MiniLM embedder).
+
+# Shared build + wiring for every app container (same image, only env differs).
+x-app: &app
+  build:
+    context: .
+    dockerfile: deploy/Dockerfile
+  image: firmosaurus-app:prod
+  env_file: .env
+  restart: unless-stopped
+  depends_on:
+    redpanda:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
+    mongo:
+      condition: service_healthy
+    minio:
+      condition: service_started
+
+# In-container hostnames (override the host-native localhost defaults in .env).
+x-backend-env: &backend-env
+  REDPANDA_BROKERS: redpanda:9092
+  REDIS_URL: redis://redis:6379/0
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_DSN: postgresql://${POSTGRES_USER:-firmosaurus}:${POSTGRES_PASSWORD:-firmosaurus}@postgres:5432/${POSTGRES_DB:-firmosaurus}
+  MONGO_URL: mongodb://mongo:27017/${MONGO_DB:-firmosaurus}
+  MINIO_ENDPOINT: localhost:9000
+  MINIO_ENDPOINT_INTERNAL: minio:9000
+  # Presigned URLs must resolve from the HOST (the frontend runs natively).
+  MINIO_SERVER_URL: http://localhost:9000
+
+services:
+  # ---- four routers: one SERVICES value each, same image ------------------ #
+  router-triage:
+    <<: *app
+    container_name: firmosaurus-router-triage
+    environment:
+      <<: *backend-env
+      SERVICES: triage
+    mem_limit: 320m
+
+  router-unpack:
+    <<: *app
+    container_name: firmosaurus-router-unpack
+    environment:
+      <<: *backend-env
+      SERVICES: unpack
+    # binwalk + extraction backends (subprocess); RLIMIT_AS caps each child.
+    mem_limit: 640m
+
+  router-analysis:
+    <<: *app
+    container_name: firmosaurus-router-analysis
+    environment:
+      <<: *backend-env
+      SERVICES: analysis
+    mem_limit: 512m
+
+  router-match-aggregate:
+    <<: *app
+    container_name: firmosaurus-router-match-aggregate
+    environment:
+      <<: *backend-env
+      # Combined per the SERVICES vocabulary (backend-architecture.md rule 5).
+      SERVICES: match,aggregate
+    # Hosts torch + the MiniLM embedder + pgvector query path: headroom parked here.
+    mem_limit: 1792m
+
+  # ---- gateway (upload + RBAC + CVE surface + Group-4 integration routes) -- #
+  gateway:
+    <<: *app
+    container_name: firmosaurus-gateway
+    command: ["uvicorn", "services.integration.app:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      <<: *backend-env
+      SERVICES: all
+    ports:
+      - "8000:8000"
+    # RAG chat embeds the question locally (torch), so the gateway also carries
+    # the embedder — sized accordingly.
+    mem_limit: 1024m
+
+  # ---- notifier (own consumer group; live WebSocket progress) ------------- #
+  notifier:
+    <<: *app
+    container_name: firmosaurus-notifier
+    command: ["uvicorn", "services.notifier.app:app", "--host", "0.0.0.0", "--port", "8001"]
+    environment:
+      <<: *backend-env
+      SERVICES: all
+    ports:
+      - "8001:8001"
+    mem_limit: 320m

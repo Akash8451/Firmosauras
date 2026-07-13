@@ -1,0 +1,38 @@
+# Production image dependency manifest (Group 4 — owns the production profile).
+#
+# This is the UNION of every service's pinned requirements, de-conflicted so a
+# SINGLE image can run any process (router handlers, gateway, notifier). It is
+# what makes the "same image, only SERVICES/command change" story true.
+#
+# De-confliction note: the gateway pins fastapi==0.115.14 / uvicorn 0.35.0 while
+# the notifier pins fastapi 0.111.1 / uvicorn 0.30.3 — we consolidate on the
+# newer gateway pins (the notifier's WebSocket + lifespan code runs on 0.115).
+# Every other pin is copied verbatim from the owning group's requirements.txt.
+
+# --- core (root requirements.txt) ---
+pydantic==2.11.7
+confluent-kafka==2.15.0
+
+# --- web surface (gateway + notifier, consolidated) ---
+fastapi==0.115.14
+uvicorn[standard]==0.35.0
+python-multipart==0.0.9
+httpx==0.28.1
+
+# --- storage / data clients ---
+boto3==1.43.6
+psycopg[binary]==3.2.1
+pgvector==0.3.2
+minio==7.2.7
+pymongo==4.8.0
+redis==5.0.7
+
+# --- intelligence (cve_matching) ---
+sentence-transformers==3.0.1
+APScheduler==3.10.4
+openai==1.40.0
+
+# --- ingestion / extraction backends (unpack.py) ---
+binwalk==2.3.4
+jefferson==0.4.5
+ubi_reader==0.8.9
