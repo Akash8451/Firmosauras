@@ -1,0 +1,11 @@
+# Group 2 — Upload Gateway runtime deps (additive to root requirements.txt).
+# Pinned. Real backends (boto3/psycopg/kafka) are lazy-imported so a plain unit
+# test run uses the in-memory fakes and needs only fastapi + a test client.
+
+fastapi==0.115.14        # upload + RBAC HTTP surface
+uvicorn==0.35.0          # ASGI server (local run)
+python-multipart==0.0.9  # multipart form parsing (FastAPI file endpoints)
+boto3==1.43.6            # S3-compatible MinIO client (presigned multipart, dual endpoints)
+psycopg[binary]==3.2.1   # Postgres driver for the jobs table (matches Group 3's pin)
+confluent-kafka==2.15.0  # firmware.uploaded producer (matches root pin)
+httpx==0.28.1            # FastAPI TestClient dependency (tests)

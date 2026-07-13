@@ -1,0 +1,8 @@
+# Group 2 — ingestion/extraction runtime deps (additive to root requirements.txt).
+# Pinned. Real backends are lazy-imported so a plain unit-test run needs none of
+# these installed (tests use the in-memory fakes + the native zip/tar/gzip path).
+
+boto3==1.43.6          # MinIO blob I/O via the internal endpoint (S3-compatible)
+binwalk==2.3.4         # firmware carving/extraction driver (unpack.py sandbox path)
+jefferson==0.4.5       # JFFS2 extraction backend (invoked by binwalk)
+ubi_reader==0.8.9      # UBI / UBIFS extraction backend (invoked by binwalk)
